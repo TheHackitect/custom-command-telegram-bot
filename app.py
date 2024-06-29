@@ -252,6 +252,11 @@ async def delete_admin_finish(update: Update, context: ContextTypes.DEFAULT_TYPE
     else:
         await update.message.reply_text("Admin not found.")
     return ConversationHandler.END
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    context.user_data.clear()
+    await update.message.reply_text('Action Successfully cancelled')
+    return ConversationHandler.END
+
 
 # Main function to start the bot
 def main() -> None:
@@ -271,7 +276,9 @@ def main() -> None:
             ADD_RESPONSE: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_command_is_admin)],
             ADD_IS_ADMIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_command_finish)],
         },
-        fallbacks=[],
+        fallbacks=[
+            CommandHandler("cancel", cancel)
+        ],
     )
 
     # Conversation handlers for editing commands
@@ -288,7 +295,9 @@ def main() -> None:
             EDIT_RESPONSE: [MessageHandler(filters.TEXT & ~filters.COMMAND, edit_command_finish)],
             EDIT_IS_ADMIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, edit_command_finish)],
         },
-        fallbacks=[],
+        fallbacks=[
+            CommandHandler("cancel", cancel)
+        ],
     )
 
     # Conversation handlers for deleting commands
@@ -298,7 +307,9 @@ def main() -> None:
             DELETE_COMMAND: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_command_confirmation)],
             DELETE_CONFIRMATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_command_finish)],
         },
-        fallbacks=[],
+        fallbacks=[
+            CommandHandler("cancel", cancel)
+        ],
     )
 
     # Conversation handlers for managing admins
@@ -307,7 +318,9 @@ def main() -> None:
         states={
             ADD_ADMIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_admin_finish)],
         },
-        fallbacks=[],
+        fallbacks=[
+            CommandHandler("cancel", cancel)
+        ],
     )
 
     delete_admin_conv_handler = ConversationHandler(
@@ -315,7 +328,9 @@ def main() -> None:
         states={
             DELETE_ADMIN_CONFIRMATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_admin_finish)],
         },
-        fallbacks=[],
+        fallbacks=[
+            CommandHandler("cancel", cancel)
+        ],
     )
 
     # Add conversation handlers to the application
@@ -325,6 +340,7 @@ def main() -> None:
     application.add_handler(add_admin_conv_handler)
     application.add_handler(delete_admin_conv_handler)
 
+    application.add_handler(CommandHandler("cancel", cancel))
     # Echo handler for non-command messages
     application.add_handler(MessageHandler(filters.TEXT, echo))
 
