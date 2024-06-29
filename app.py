@@ -45,13 +45,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         new_user = User(telegram_id=user.id)
         db.add(new_user)
         db.commit()
-    welcome_message = f"Hi {user.mention_html()}! Type /help to see available commands."
+    welcome_message = f"Hi {user.mention_html()}! "
     additional_message = db.query(Command).filter_by(command='start').first()
     if additional_message:
         welcome_message += f"\n\n{additional_message.response}"
+        welcome_message += f"\n\nType /help to see available commands."
+        markup = ReplyKeyboardMarkup([['🔙 Back_Start']], resize_keyboard=True)
     await update.message.reply_html(
-        rf"{welcome_message}",
-        reply_markup=ForceReply(selective=True),
+        rf"{welcome_message}", reply_markup=markup, disable_web_page_preview=True
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -60,6 +61,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     help_text = "Available commands:\n"
     for cmd in commands:
         help_text += f"/{cmd.command}: {cmd.description}\n"
+    await update.message.reply_text(help_text)
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    db: Session = next(get_db())
+    commands = db.query(Command).filter_by(is_admin=False).all()
+    help_text = "Available commands:\n\n"
+    for cmd in commands:
+        help_text += f"/{cmd.command}: {cmd.description}\n\n"
     await update.message.reply_text(help_text)
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -78,14 +87,18 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # Conversation handlers for adding a command
 async def add_command_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if update.effective_user.id != ADMIN_ID:
+    admin_id = update.effective_user.id
+    db: Session = next(get_db())
+    admin = db.query(Admin).filter_by(telegram_id=admin_id).first()
+    if not admin:
         await update.message.reply_text("You are not authorized to perform this action.")
         return ConversationHandler.END
-    await update.message.reply_text("Enter the command:")
+    await update.message.reply_text("Enter the command without '/':")
     return ADD_COMMAND
 
 async def add_command_description(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.user_data['command'] = update.message.text
+    command = update.message.text
+    context.user_data['command'] = (command.replace(' ','_')).lower()
     await update.message.reply_text("Enter the description:")
     return ADD_DESCRIPTION
 
@@ -115,7 +128,10 @@ async def add_command_finish(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 # Conversation handlers for editing a command
 async def edit_command_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if update.effective_user.id != ADMIN_ID:
+    admin_id = update.effective_user.id
+    db: Session = next(get_db())
+    admin = db.query(Admin).filter_by(telegram_id=admin_id).first()
+    if not admin:
         await update.message.reply_text("You are not authorized to perform this action.")
         return ConversationHandler.END
     await update.message.reply_text("Enter the command you want to edit:")
@@ -130,7 +146,7 @@ async def edit_command_choice(update: Update, context: ContextTypes.DEFAULT_TYPE
         return ConversationHandler.END
     context.user_data['command_id'] = command.id
     keyboard = [['Description', 'Response', 'Admin Status']]
-    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text("What do you want to edit?", reply_markup=reply_markup)
     return EDIT_CHOICE
 
@@ -165,7 +181,10 @@ async def edit_command_finish(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 # Conversation handlers for deleting a command
 async def delete_command_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if update.effective_user.id != ADMIN_ID:
+    admin_id = update.effective_user.id
+    db: Session = next(get_db())
+    admin = db.query(Admin).filter_by(telegram_id=admin_id).first()
+    if not admin:
         await update.message.reply_text("You are not authorized to perform this action.")
         return ConversationHandler.END
     await update.message.reply_text("Enter the command you want to delete:")
@@ -194,7 +213,10 @@ async def delete_command_finish(update: Update, context: ContextTypes.DEFAULT_TY
 
 # Conversation handlers for adding and deleting admins
 async def add_admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if update.effective_user.id != ADMIN_ID:
+    admin_id = update.effective_user.id
+    db: Session = next(get_db())
+    admin = db.query(Admin).filter_by(telegram_id=admin_id).first()
+    if not admin:
         await update.message.reply_text("You are not authorized to perform this action.")
         return ConversationHandler.END
     await update.message.reply_text("Enter the Telegram ID of the new admin:")
@@ -210,7 +232,10 @@ async def add_admin_finish(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     return ConversationHandler.END
 
 async def delete_admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if update.effective_user.id != ADMIN_ID:
+    admin_id = update.effective_user.id
+    db: Session = next(get_db())
+    admin = db.query(Admin).filter_by(telegram_id=admin_id).first()
+    if not admin:
         await update.message.reply_text("You are not authorized to perform this action.")
         return ConversationHandler.END
     await update.message.reply_text("Enter the Telegram ID of the admin to delete:")
@@ -234,6 +259,7 @@ def main() -> None:
 
     # Command handlers
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.Regex('🔙 Back_Start'), start))
     application.add_handler(CommandHandler("help", help_command))
 
     # Conversation handlers for adding commands
