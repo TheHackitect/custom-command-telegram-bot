@@ -26,7 +26,7 @@
 
     <h2>Setup Instructions</h2>
     <ol>
-      <li><strong>Clone Repository:</strong> Clone the repository from GitHub:
+      <li><strong>Clone Repository:</strong> Clone the repository from GitHub(If its on github):
         <pre><code>git clone &lt;repository_url&gt;
 cd &lt;repository_name&gt;</code></pre>
       </li>
@@ -42,8 +42,8 @@ cd &lt;repository_name&gt;</code></pre>
       <li><strong>Database Setup:</strong> The bot uses SQLite by default. Ensure SQLite is installed, or update <code>DATABASE_URL</code> in <code>config.py</code> for another database engine if needed:
         <pre><code>DATABASE_URL = "sqlite:///my_bot.db"</code></pre>
       </li>
-      <li><strong>Run the Bot:</strong> Start the bot by running <code>bot.py</code>:
-        <pre><code>python bot.py</code></pre>
+      <li><strong>Run the Bot:</strong> Start the bot by running <code>app.py</code>:
+        <pre><code>python app.py</code></pre>
       </li>
     </ol>
 
@@ -52,6 +52,7 @@ cd &lt;repository_name&gt;</code></pre>
       <li><strong>Commands</strong>:
         <ul>
           <li><code>/start</code>: Initializes the bot and registers the user. Includes a customizable welcome message if configured in the database.</li>
+          <li><code>/cancel</code>: Cancel a process at anytime the <code>/start</code> command does thesame too</li>
           <li><code>/help</code>: Lists available public commands and their descriptions.</li>
           <li><code>/addcommand</code>: Initiates the process to add a new command (admin only).</li>
           <li><code>/editcommand</code>: Initiates the process to edit an existing command (admin only).</li>
@@ -62,9 +63,6 @@ cd &lt;repository_name&gt;</code></pre>
       </li>
       <li><strong>Dynamic Command Handling</strong>: Non-command messages are checked against registered commands in the database. If a match is found, the bot responds accordingly.</li>
     </ul>
-
-    <h2>Contributions</h2>
-    <p>Contributions are welcome! Feel free to fork the repository, make changes, and submit pull requests.</p>
   </div>
 
   <!-- Bootstrap JS (Optional) -->

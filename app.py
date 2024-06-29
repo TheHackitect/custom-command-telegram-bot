@@ -39,6 +39,7 @@ def get_db():
 
 # Define command handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    context.user_data.clear()
     user = update.effective_user
     db: Session = next(get_db())
     if not db.query(User).filter(User.telegram_id == user.id).first():
@@ -93,23 +94,23 @@ async def add_command_start(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     if not admin:
         await update.message.reply_text("You are not authorized to perform this action.")
         return ConversationHandler.END
-    await update.message.reply_text("Enter the command without '/':")
+    await update.message.reply_text("Enter the command without '/':\n\nUse /cancel to cancel")
     return ADD_COMMAND
 
 async def add_command_description(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     command = update.message.text
     context.user_data['command'] = (command.replace(' ','_')).lower()
-    await update.message.reply_text("Enter the description:")
+    await update.message.reply_text("Enter the description:\n\nUse /cancel to cancel")
     return ADD_DESCRIPTION
 
 async def add_command_response(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data['description'] = update.message.text
-    await update.message.reply_text("Enter the response:")
+    await update.message.reply_text("Enter the response:\n\nUse /cancel to cancel")
     return ADD_RESPONSE
 
 async def add_command_is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data['response'] = update.message.text
-    await update.message.reply_text("Is this an admin command? (yes/no)")
+    await update.message.reply_text("Is this an admin command? (yes/no)\n\nUse /cancel to cancel")
     return ADD_IS_ADMIN
 
 async def add_command_finish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -134,7 +135,7 @@ async def edit_command_start(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not admin:
         await update.message.reply_text("You are not authorized to perform this action.")
         return ConversationHandler.END
-    await update.message.reply_text("Enter the command you want to edit:")
+    await update.message.reply_text("Enter the command you want to edit:\n\nUse /cancel to cancel")
     return EDIT_COMMAND
 
 async def edit_command_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -147,22 +148,22 @@ async def edit_command_choice(update: Update, context: ContextTypes.DEFAULT_TYPE
     context.user_data['command_id'] = command.id
     keyboard = [['Description', 'Response', 'Admin Status']]
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
-    await update.message.reply_text("What do you want to edit?", reply_markup=reply_markup)
+    await update.message.reply_text("What do you want to edit?\n\nUse /cancel to cancel", reply_markup=reply_markup)
     return EDIT_CHOICE
 
 async def edit_command_description(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data['edit_choice'] = 'description'
-    await update.message.reply_text("Enter the new description:")
+    await update.message.reply_text("Enter the new description:\n\nUse /cancel to cancel")
     return EDIT_DESCRIPTION
 
 async def edit_command_response(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data['edit_choice'] = 'response'
-    await update.message.reply_text("Enter the new response:")
+    await update.message.reply_text("Enter the new response:\n\nUse /cancel to cancel")
     return EDIT_RESPONSE
 
 async def edit_command_is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data['edit_choice'] = 'is_admin'
-    await update.message.reply_text("Is this an admin command? (yes/no)")
+    await update.message.reply_text("Is this an admin command? (yes/no)\n\nUse /cancel to cancel")
     return EDIT_IS_ADMIN
 
 async def edit_command_finish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -187,7 +188,7 @@ async def delete_command_start(update: Update, context: ContextTypes.DEFAULT_TYP
     if not admin:
         await update.message.reply_text("You are not authorized to perform this action.")
         return ConversationHandler.END
-    await update.message.reply_text("Enter the command you want to delete:")
+    await update.message.reply_text("Enter the command you want to delete:\n\nUse /cancel to cancel")
     return DELETE_COMMAND
 
 async def delete_command_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -197,7 +198,7 @@ async def delete_command_confirmation(update: Update, context: ContextTypes.DEFA
     if not command:
         await update.message.reply_text("Command not found.")
         return ConversationHandler.END
-    await update.message.reply_text(f"Are you sure you want to delete the command /{command.command}? (yes/no)")
+    await update.message.reply_text(f"Are you sure you want to delete the command /{command.command}? (yes/no)\n\nUse /cancel to cancel")
     return DELETE_CONFIRMATION
 
 async def delete_command_finish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -219,7 +220,7 @@ async def add_admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if not admin:
         await update.message.reply_text("You are not authorized to perform this action.")
         return ConversationHandler.END
-    await update.message.reply_text("Enter the Telegram ID of the new admin:")
+    await update.message.reply_text("Enter the Telegram ID of the new admin:\n\nUse /cancel to cancel")
     return ADD_ADMIN
 
 async def add_admin_finish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -238,7 +239,7 @@ async def delete_admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not admin:
         await update.message.reply_text("You are not authorized to perform this action.")
         return ConversationHandler.END
-    await update.message.reply_text("Enter the Telegram ID of the admin to delete:")
+    await update.message.reply_text("Enter the Telegram ID of the admin to delete:\n\nUse /cancel to cancel")
     return DELETE_ADMIN_CONFIRMATION
 
 async def delete_admin_finish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -277,7 +278,8 @@ def main() -> None:
             ADD_IS_ADMIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_command_finish)],
         },
         fallbacks=[
-            CommandHandler("cancel", cancel)
+            CommandHandler("cancel", cancel),
+            CommandHandler("start", start)
         ],
     )
 
@@ -296,7 +298,8 @@ def main() -> None:
             EDIT_IS_ADMIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, edit_command_finish)],
         },
         fallbacks=[
-            CommandHandler("cancel", cancel)
+            CommandHandler("cancel", cancel),
+            CommandHandler("start", start)
         ],
     )
 
@@ -308,7 +311,8 @@ def main() -> None:
             DELETE_CONFIRMATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_command_finish)],
         },
         fallbacks=[
-            CommandHandler("cancel", cancel)
+            CommandHandler("cancel", cancel),
+            CommandHandler("start", start)
         ],
     )
 
@@ -319,7 +323,8 @@ def main() -> None:
             ADD_ADMIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_admin_finish)],
         },
         fallbacks=[
-            CommandHandler("cancel", cancel)
+            CommandHandler("cancel", cancel),
+            CommandHandler("start", start)
         ],
     )
 
@@ -329,7 +334,8 @@ def main() -> None:
             DELETE_ADMIN_CONFIRMATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_admin_finish)],
         },
         fallbacks=[
-            CommandHandler("cancel", cancel)
+            CommandHandler("cancel", cancel),
+            CommandHandler("start", start)
         ],
     )
 
